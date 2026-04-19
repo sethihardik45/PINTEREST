@@ -36,17 +36,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          if ! git ls-remote --exit-code --heads origin images >/dev/null 2>&1; then
-            echo "Creating empty 'images' branch..."
-            git checkout --orphan images
-            git rm -rf . >/dev/null 2>&1 || true
-            git config user.email "actions@github.com"
-            git config user.name  "GitHub Actions"
-            git commit --allow-empty -m "Initialize images branch"
-            git push origin images
-            git checkout -
-          else
+          if git ls-remote --exit-code --heads origin images >/dev/null 2>&1; then
             echo "'images' branch already exists."
+          else
+            echo "Creating empty 'images' branch (working tree untouched)..."
+            # Well-known SHA of the empty Git tree — avoids modifying the working dir.
+            EMPTY_TREE=4b825dc642cb6eb9a060e54bf8d69288fbee4904
+            COMMIT=$(git commit-tree "$EMPTY_TREE" -m "Initialize images branch")
+            git push origin "$COMMIT:refs/heads/images"
           fi
 
       - name: Generate image and publish pin
