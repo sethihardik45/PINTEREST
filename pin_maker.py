@@ -228,11 +228,21 @@ def main() -> int:
 
     # buffer.create_pin() would re-upload locally; we've already got a public URL,
     # so call the GraphQL mutation directly with our GitHub-hosted URL.
+    #
+    # Critical flags that prevent Pinterest's post-acceptance moderation from
+    # silently deleting the pin (confirmed via schema introspection on api.buffer.com):
+    #   * aiAssisted: true   — Pinterest 2025 AI-disclosure policy. Unlabeled AI
+    #                          content is removed within seconds of posting.
+    #   * altText            — NON_NULL on ImageMetadataInput; missing altText is
+    #                          a spam-classifier signal.
+    #   * source             — Identifies our automation legitimately instead of
+    #                          looking like a spoofed/scraped client.
     mutation = """
     mutation PublishPin(
       $channelId: ChannelId!
       $text: String!
       $imageUrl: String!
+      $altText: String!
       $title: String
       $link: String
       $boardServiceId: String!
@@ -241,8 +251,15 @@ def main() -> int:
         channelId: $channelId
         schedulingType: automatic
         mode: shareNow
+        aiAssisted: true
+        source: "lumus-pinterest-automation"
         text: $text
-        assets: { images: [{ url: $imageUrl }] }
+        assets: {
+          images: [{
+            url: $imageUrl
+            metadata: { altText: $altText }
+          }]
+        }
         metadata: {
           pinterest: {
             title: $title
@@ -257,10 +274,18 @@ def main() -> int:
       }
     }
     """
+    # Build an alt-text that describes the image (the caption topic is more
+    # useful for screen readers / Pinterest's classifier than the caption body).
+    alt_text = (
+        f"{topic}: mystical Lumus Psychics image — {caption}"
+        if topic else (caption or "Lumus Psychics mystical pin")
+    )[:500]
+
     variables = {
         "channelId": channel["id"],
         "text": (caption or title).strip() or "New pin",
         "imageUrl": image_url,
+        "altText": alt_text,
         "title": (title.strip()[:100]) or None,
         "link": link or None,
         "boardServiceId": board_id,
