@@ -33,9 +33,11 @@ from __future__ import annotations
 
 import base64
 import os
+import random
 import sys
 import time
 from pathlib import Path
+from urllib.parse import urlencode, urlparse, urlunparse, parse_qsl
 
 import requests
 
@@ -59,6 +61,49 @@ RAW_BASE = "https://raw.githubusercontent.com"
 
 def _env(name: str, default: str = "") -> str:
     return (os.environ.get(name) or default).strip()
+
+
+# Pool of Pinterest-native titles that rotate per-pin so Pinterest's duplicate
+# detector doesn't see the same headline on every single post. Each title is
+# tuned to feel like an organic editorial pin, not an ad.
+TITLE_POOL = [
+    "Psychic, Tarot & Astrology Insights",
+    "Daily Mystical Guidance",
+    "Tarot, Moon & Cosmic Wisdom",
+    "Your Daily Cosmic Download",
+    "Spiritual Insights for Today",
+    "Lumus Psychics — Daily Reading",
+    "Energy, Intuition & Signs",
+    "Mystical Wisdom Worth Reading",
+    "Today's Spiritual Note",
+    "Astrology, Tarot & Intuition",
+]
+
+
+def pick_title(topic: str) -> str:
+    """Return a varied title. If topic is specific, use it; else random from pool."""
+    forced = _env("BUFFER_TITLE")
+    if forced:
+        return forced
+    if topic:
+        return f"{topic} — Lumus Psychics"[:100]
+    return random.choice(TITLE_POOL)
+
+
+def decorate_link(link: str, topic: str) -> str:
+    """Append UTM params so every pin has a unique destination URL (Pinterest
+    collapses pins pointing to an identical URL as duplicates)."""
+    if not link:
+        return link
+    parsed = urlparse(link)
+    existing = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    existing.setdefault("utm_source", "pinterest")
+    existing.setdefault("utm_medium", "pin")
+    existing.setdefault("utm_campaign", "lumus_auto")
+    if topic:
+        existing["utm_content"] = topic.lower().replace(" ", "_")[:40]
+    existing["t"] = str(int(time.time()))
+    return urlunparse(parsed._replace(query=urlencode(existing)))
 
 
 def upload_to_github(image_path: Path) -> str:
@@ -175,8 +220,11 @@ def main() -> int:
     print(f"       -> board:   {board_name or '(unknown)'} ({board_id})")
 
     print("[4/4] Publishing pin via Buffer (shareNow)...")
-    title = _env("BUFFER_TITLE", "Free Chat with Psychics")
-    link = _env("BUFFER_LINK", "https://lumusapp.com/81vh/pin_social")
+    title = pick_title(topic)
+    raw_link = _env("BUFFER_LINK", "https://lumusapp.com/81vh/pin_social")
+    link = decorate_link(raw_link, topic)
+    print(f"       -> title: {title}")
+    print(f"       -> link:  {link}")
 
     # buffer.create_pin() would re-upload locally; we've already got a public URL,
     # so call the GraphQL mutation directly with our GitHub-hosted URL.
