@@ -2,8 +2,11 @@ name: Post Pinterest Pin via Buffer
 
 on:
   schedule:
-    # Every 2 hours, on the hour. GitHub cron is always UTC.
-    - cron: "0 */2 * * *"
+    # Every 6 hours (4 pins/day). GitHub cron is always UTC.
+    # Buffer's Free plan caps Pinterest at 5 scheduled posts/day — every-2h would
+    # exceed that. If you upgrade to Buffer Essentials (100/channel/day), flip
+    # this to "0 */2 * * *".
+    - cron: "15 */6 * * *"
   workflow_dispatch:
 
 permissions:

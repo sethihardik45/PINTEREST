@@ -292,8 +292,14 @@ def main() -> int:
     }
     data = buf._graphql(mutation, variables)
     result = (data or {}).get("createPost") or {}
-    if result.get("__typename") == "MutationError":
-        raise RuntimeError(f"Buffer rejected the post: {result.get('message')}")
+    typename = result.get("__typename") or ""
+    # Buffer returns a union of error types (PostActionSuccess, MutationError,
+    # LimitReachedError, InvalidInputError, etc.) — anything not PostActionSuccess
+    # means the mutation didn't publish. Treat all of them as hard failures.
+    if typename != "PostActionSuccess":
+        msg = result.get("message") or f"unexpected response __typename={typename}"
+        print(f"       -> buffer response: {result}")
+        raise RuntimeError(f"Buffer did not publish the pin ({typename}): {msg}")
 
     post_id = (((result.get("post") or {}).get("id")) or "")
     print(f"       -> buffer response: {result}")
