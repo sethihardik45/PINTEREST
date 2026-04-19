@@ -1,0 +1,10 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.claude/
+
+# Generated images — never commit these
+static/generated/

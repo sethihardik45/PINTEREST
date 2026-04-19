@@ -1,0 +1,62 @@
+name: Post Pinterest Pin via Buffer
+
+on:
+  schedule:
+    # Every 2 hours, on the hour. GitHub cron is always UTC.
+    - cron: "0 */2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed so GITHUB_TOKEN can push the image to the `images` branch
+
+concurrency:
+  group: pinterest-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ensure `images` branch exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          if ! git ls-remote --exit-code --heads origin images >/dev/null 2>&1; then
+            echo "Creating empty 'images' branch..."
+            git checkout --orphan images
+            git rm -rf . >/dev/null 2>&1 || true
+            git config user.email "actions@github.com"
+            git config user.name  "GitHub Actions"
+            git commit --allow-empty -m "Initialize images branch"
+            git push origin images
+            git checkout -
+          else
+            echo "'images' branch already exists."
+          fi
+
+      - name: Generate image and publish pin
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BUFFER_ACCESS_TOKEN: ${{ secrets.BUFFER_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GITHUB_REPOSITORY is auto-set by GitHub Actions (owner/repo)
+          BUFFER_CHANNEL_NAME: ${{ vars.BUFFER_CHANNEL_NAME }}
+          BUFFER_BOARD_SERVICE_ID: ${{ vars.BUFFER_BOARD_SERVICE_ID }}
+          BUFFER_TITLE: ${{ vars.BUFFER_TITLE }}
+          BUFFER_LINK: ${{ vars.BUFFER_LINK }}
+        run: python pin_maker.py

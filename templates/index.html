@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mystical Image Studio</title>
+<style>
+  :root {
+    --bg: #0b0720;
+    --bg-2: #140a33;
+    --card: #1a1040;
+    --accent: #d4af37;
+    --accent-2: #a67cff;
+    --text: #f3ecff;
+    --muted: #a89bd0;
+    --danger: #ff6b8a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: radial-gradient(ellipse at top, var(--bg-2), var(--bg));
+    color: var(--text);
+    min-height: 100vh;
+  }
+  header {
+    padding: 28px 40px;
+    text-align: center;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  }
+  .brand {
+    font-size: 22px;
+    letter-spacing: 4px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .tag {
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 2px;
+    margin-top: 6px;
+  }
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    text-align: center;
+  }
+  .generate-btn {
+    padding: 18px 48px;
+    background: linear-gradient(135deg, var(--accent), #b8941f);
+    color: #1a0f30;
+    border: none;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    box-shadow: 0 8px 30px rgba(212,175,55,0.25);
+    margin-bottom: 36px;
+  }
+  .generate-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(212,175,55,0.4);
+  }
+  .generate-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  .preview {
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+  .preview .placeholder {
+    color: var(--muted);
+    padding: 60px 20px;
+    font-size: 15px;
+    letter-spacing: 1px;
+  }
+  .preview img {
+    max-width: 100%;
+    max-height: 720px;
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 60px rgba(212,175,55,0.12);
+  }
+  .category-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 22px;
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.08);
+    color: var(--accent);
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .category-label::before {
+    content: "◈";
+    color: var(--accent-2);
+    font-size: 14px;
+  }
+  .meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .meta .pill {
+    background: rgba(255,255,255,0.06);
+    padding: 6px 14px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+  }
+  .download-btn {
+    display: inline-block;
+    padding: 10px 26px;
+    background: rgba(167, 124, 255, 0.18);
+    color: var(--text);
+    text-decoration: none;
+    border-radius: 999px;
+    border: 1px solid var(--accent-2);
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+  }
+  .download-btn:hover { background: var(--accent-2); color: #1a0f30; }
+
+  .buffer-panel {
+    width: 100%;
+    max-width: 640px;
+    margin-top: 28px;
+    padding: 22px;
+    border: 1px solid rgba(167, 124, 255, 0.35);
+    background: rgba(26, 16, 64, 0.55);
+    border-radius: 14px;
+    text-align: left;
+  }
+  .buffer-panel h4 {
+    margin: 0 0 16px;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .buffer-field { margin-bottom: 12px; }
+  .buffer-field label {
+    display: block;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .buffer-field input, .buffer-field select, .buffer-field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(167, 124, 255, 0.3);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .buffer-field textarea { min-height: 64px; resize: vertical; }
+  .buffer-field input:focus, .buffer-field select:focus, .buffer-field textarea:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .publish-btn {
+    margin-top: 8px;
+    padding: 12px 26px;
+    background: linear-gradient(135deg, #e60023, #ad081b);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 3px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: transform 0.15s ease;
+  }
+  .publish-btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .publish-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .buffer-status { margin-top: 12px; font-size: 13px; }
+  .buffer-status.ok { color: #7ee695; }
+  .buffer-status.err { color: var(--danger); }
+  .buffer-status a { color: inherit; text-decoration: underline; }
+  .buffer-hint { color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid rgba(212,175,55,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  .loading { display: flex; flex-direction: column; align-items: center; gap: 14px; color: var(--muted); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error { color: var(--danger); padding: 20px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">MYSTICAL IMAGE STUDIO</div>
+  <div class="tag">POWERED BY GEMINI · 1000 × 1500 PX</div>
+</header>
+
+<main>
+  <button id="generate" class="generate-btn">✨ Generate Image</button>
+
+  <div class="preview" id="preview">
+    <div class="placeholder">Tap the button above to conjure a mystical image.</div>
+  </div>
+</main>
+
+<script>
+  const generateBtn = document.getElementById('generate');
+  const preview = document.getElementById('preview');
+
+  async function generate() {
+    generateBtn.disabled = true;
+    preview.innerHTML = '<div class="loading"><div class="spinner"></div><div>Conjuring your image...</div></div>';
+    try {
+      const res = await fetch('/api/generate', { method: 'POST' });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Generation failed');
+      const categoryBlock = data.topic
+        ? `<div class="category-label">${data.topic}</div>`
+        : '';
+      preview.innerHTML = `
+        <img src="${data.data_uri}" alt="Generated" />
+        ${categoryBlock}
+        <div class="meta">
+          <span class="pill">${data.width} × ${data.height} PX</span>
+          <span class="pill">${data.filename}</span>
+        </div>
+        <a class="download-btn" href="${data.data_uri}" download="${data.filename}">⬇ Download PNG</a>
+        <div class="buffer-panel" id="buffer-panel" data-filename="${data.filename}">
+          <h4>📌 Publish to Pinterest via Buffer</h4>
+          <div id="buffer-body"></div>
+        </div>
+      `;
+      hydrateBufferPanel(data);
+    } catch (err) {
+      preview.innerHTML = `<div class="error">${err.message}</div>`;
+    } finally {
+      generateBtn.disabled = false;
+    }
+  }
+
+  generateBtn.addEventListener('click', generate);
+
+  // ---------- Buffer → Pinterest ----------
+  let bufferConfigured = null;
+  let bufferChannels = [];
+
+  function escapeHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  async function ensureBufferBootstrapped() {
+    if (bufferConfigured === null) {
+      try {
+        const r = await fetch('/buffer/status');
+        const d = await r.json();
+        bufferConfigured = !!d.configured;
+      } catch { bufferConfigured = false; }
+    }
+    if (bufferConfigured && bufferChannels.length === 0) {
+      await fetchChannels();
+    }
+  }
+
+  async function fetchChannels() {
+    try {
+      const r = await fetch('/buffer/channels');
+      const d = await r.json();
+      if (d.ok) bufferChannels = d.channels || [];
+    } catch {}
+  }
+
+  function renderBoardOptions(channelId, preferredBoardName) {
+    const ch = bufferChannels.find(c => c.id === channelId);
+    if (!ch || !ch.boards || ch.boards.length === 0) {
+      return '<option value="">No boards found on this account</option>';
+    }
+    const norm = (s) => String(s || '').trim().toLowerCase();
+    const want = norm(preferredBoardName);
+    return ch.boards.map(b => {
+      const selected = want && norm(b.name) === want ? ' selected' : '';
+      return `<option value="${escapeHtml(b.serviceId)}"${selected}>${escapeHtml(b.name)}</option>`;
+    }).join('');
+  }
+
+  function pickDefaultChannel() {
+    if (bufferChannels.length === 0) return null;
+    const pref = bufferChannels.find(c =>
+      String(c.name || '').toLowerCase() === 'psychicslumus' ||
+      String(c.serviceId || '').toLowerCase() === 'psychicslumus'
+    );
+    return (pref || bufferChannels[0]).id;
+  }
+
+  async function hydrateBufferPanel(data) {
+    const panel = document.getElementById('buffer-panel');
+    const body = document.getElementById('buffer-body');
+    if (!panel || !body) return;
+    await ensureBufferBootstrapped();
+
+    if (!bufferConfigured) {
+      body.innerHTML = `
+        <div class="buffer-hint">
+          Set <code>BUFFER_ACCESS_TOKEN</code> in your <code>.env</code>
+          (get one at <a href="https://publish.buffer.com/settings/api" target="_blank" style="color:var(--accent-2);">publish.buffer.com/settings/api</a>),
+          then restart the server.
+        </div>`;
+      return;
+    }
+    if (bufferChannels.length === 0) {
+      body.innerHTML = `<div class="buffer-hint">No Pinterest channel found in your Buffer account. Connect Pinterest at <a href="https://publish.buffer.com/channels" target="_blank" style="color:var(--accent-2);">publish.buffer.com/channels</a>, then reload.</div>`;
+      return;
+    }
+
+    const DEFAULT_TITLE = 'Free Chat with Psychics';
+    const DEFAULT_LINK = 'https://lumusapp.com/81vh/pin_social';
+    const categoryForBoard = data.topic || '';
+    const safeCaption = escapeHtml(data.caption || '');
+    const defaultChannelId = pickDefaultChannel();
+    body.innerHTML = `
+      <div class="buffer-field">
+        <label>Pinterest Account</label>
+        <select id="buf-channel">
+          ${bufferChannels.map(c => `<option value="${c.id}"${c.id === defaultChannelId ? ' selected' : ''}>${escapeHtml(c.name || c.id)}${c.organizationName ? ' · ' + escapeHtml(c.organizationName) : ''}</option>`).join('')}
+        </select>
+      </div>
+      <div class="buffer-field">
+        <label style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Board (auto-matched to caption category: <strong>${escapeHtml(categoryForBoard)}</strong>)</span>
+          <button type="button" id="buf-refresh-boards" style="background:none;border:1px solid var(--accent-2);color:var(--accent-2);border-radius:999px;padding:3px 10px;font-size:10px;letter-spacing:1px;cursor:pointer;text-transform:uppercase;">↻ Refresh</button>
+        </label>
+        <select id="buf-board">${renderBoardOptions(defaultChannelId, categoryForBoard)}</select>
+        <input id="buf-board-override" type="text" placeholder="Or paste a Pinterest board ID to override (e.g. 1147081036281133546)" style="margin-top:6px;font-size:12px;" />
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45;">
+          Seeing only <strong>Quick saves</strong>? Buffer caches the Pinterest board list and has no API refresh.
+          Open <a href="https://publish.buffer.com/channels" target="_blank" style="color:var(--accent-2);">publish.buffer.com/channels</a> → click the <strong>psychicslumus</strong> channel → <em>Reconnect</em> (or disconnect &amp; reconnect) to pull your new boards. Then hit ↻ Refresh above.
+        </div>
+      </div>
+      <div class="buffer-field">
+        <label>Title</label>
+        <input id="buf-title" type="text" maxlength="100" value="${escapeHtml(DEFAULT_TITLE)}" />
+      </div>
+      <div class="buffer-field">
+        <label>Description</label>
+        <textarea id="buf-description" maxlength="500">${safeCaption}</textarea>
+      </div>
+      <div class="buffer-field">
+        <label>Destination Link</label>
+        <input id="buf-link" type="url" value="${escapeHtml(DEFAULT_LINK)}" />
+      </div>
+      <button id="buf-publish" class="publish-btn">📌 Publish Pin Now</button>
+      <div class="buffer-status" id="buf-status"></div>
+    `;
+
+    document.getElementById('buf-channel').addEventListener('change', (e) => {
+      document.getElementById('buf-board').innerHTML = renderBoardOptions(e.target.value, categoryForBoard);
+    });
+
+    document.getElementById('buf-refresh-boards').addEventListener('click', async () => {
+      const btn = document.getElementById('buf-refresh-boards');
+      const label = btn.textContent;
+      btn.disabled = true; btn.textContent = '... syncing';
+      await fetchChannels();
+      const channelSel = document.getElementById('buf-channel');
+      const currentId = channelSel.value;
+      document.getElementById('buf-board').innerHTML = renderBoardOptions(currentId, categoryForBoard);
+      btn.disabled = false; btn.textContent = label;
+    });
+
+    document.getElementById('buf-publish').addEventListener('click', async () => {
+      const btn = document.getElementById('buf-publish');
+      const status = document.getElementById('buf-status');
+      btn.disabled = true;
+      status.className = 'buffer-status';
+      status.textContent = 'Uploading image and sending to Buffer...';
+      try {
+        const override = (document.getElementById('buf-board-override').value || '').trim();
+        const body = {
+          filename: panel.dataset.filename,
+          channel_id: document.getElementById('buf-channel').value,
+          board_service_id: override || document.getElementById('buf-board').value,
+          title: document.getElementById('buf-title').value,
+          description: document.getElementById('buf-description').value,
+          link: document.getElementById('buf-link').value,
+        };
+        const res = await fetch('/buffer/publish', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(body),
+        });
+        const d = await res.json();
+        if (!d.ok) throw new Error(d.error || 'Publish failed');
+        status.className = 'buffer-status ok';
+        status.innerHTML = `✓ Published to Pinterest via Buffer. Image hosted at <a href="${d.image_url}" target="_blank">${d.image_url}</a>`;
+      } catch (err) {
+        status.className = 'buffer-status err';
+        status.textContent = '✗ ' + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+</script>
+</body>
+</html>
